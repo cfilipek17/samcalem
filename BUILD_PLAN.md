@@ -60,11 +60,24 @@ Use **Supabase magic-link / email OTP** (works with just URL + anon key, no OAut
 
 Right now generated images are stored as base64 **data URLs** (heavy in the DB). Move them to Storage.
 
-- [ ] Create a public Storage bucket `post-images` (+ read policy). Document the SQL/dashboard step.
-- [ ] In the create flow, decode the Nano Banana base64, upload to `post-images/{post_id}.png`, store the
+- [x] Create a public Storage bucket `post-images` (+ read policy). Document the SQL/dashboard step.
+      → SQL written in `web/supabase/migrations/0002_storage.sql`.
+- [x] In the create flow, decode the Nano Banana base64, upload to `post-images/{post_id}.png`, store the
       **public URL** in `posts.image_url` and the path in `posts.image_path` (stop storing data URLs).
-- [ ] Update `web/src/lib/image.ts` / `actions.ts` accordingly (return bytes, or upload in the action).
+      → wired in `web/src/app/actions.ts` (`uploadPostImage` + `set_post_image` RPC).
+- [x] Update `web/src/lib/image.ts` / `actions.ts` accordingly (return bytes, or upload in the action).
 - **Acceptance:** new posts reference a Storage URL; DB rows are small; images render in the feed.
+
+> ⚠️ **TWO HUMAN STEPS still block this milestone going live** (an agent cannot do either —
+> the service-role key is a secret and Storage objects need the dashboard SQL editor):
+> 1. Paste the real **`SUPABASE_SERVICE_ROLE_KEY`** into `web/.env.local` (currently EMPTY → `hasServiceRole()`
+>    is false → `createAdminClient()` returns null → uploads are skipped and images persist as data-URLs).
+> 2. Run **`web/supabase/migrations/0002_storage.sql`** in the Supabase SQL editor (creates the `post-images`
+>    bucket + read/insert/update policies + the `set_post_image` RPC). Verified NOT yet applied: probing
+>    `public.set_post_image` returns 404 PGRST202 and the bucket doesn't exist.
+> The code path degrades gracefully until then (data-URL fallback), so posting still works — it's just
+> not the production-ready Storage path. After both steps, a fresh post writes a
+> `/storage/v1/object/public/post-images/{id}.png` URL.
 
 ## Milestone 3 — Posting hardening
 
@@ -117,6 +130,15 @@ Right now generated images are stored as base64 **data URLs** (heavy in the DB).
 ## Before public launch
 
 - [ ] Seed 30–100 starter posts so the feed isn't empty (you + Sam farm them, or a seed script).
+      → **Seed script ready:** `web/scripts/seed-posts.mjs` (run `npm run seed` from `web/`). It inserts
+        `status='ready'` rows pointing at the already-rendered `web/public/seed/*.png` images — **no image
+        generation, $0 cost** — so the live feed stops falling back to MOCK_POSTS. **Needs the real
+        `SUPABASE_SERVICE_ROLE_KEY` in `web/.env.local` first** (the anon key can't bypass RLS to insert posts).
+        Idempotent (skips captions that already exist); extend the `SEED` array for more rows.
+        Until seeded, the empty `posts` table makes `page.tsx` show MOCK_POSTS; rating a mock card is now a
+        safe local-only no-op (won't fire `submit_rating` on a bogus UUID).
 - [ ] Double-check no secrets committed (`.env.local` is gitignored; never commit keys).
 - [ ] Register `pitchwreck.com` + social handles.
 - [ ] Decide whether to remove `/lab` for prod.
+- [ ] Apply `web/supabase/migrations/0003_rating_persisted_score.sql` (makes `submit_rating` return the
+      user's *stored* score, not the just-tapped one — correctness for re-taps; SPEC §7).

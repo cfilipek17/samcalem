@@ -22,6 +22,23 @@ export default async function Home() {
       .limit(20);
     // Fall back to mock if the table is empty so the feed never looks broken.
     if (data && data.length > 0) {
+      // Batch-fetch the viewer's existing votes for these posts in ONE query
+      // (no N+1), so already-rated posts render the crowd-reveal with the real
+      // stored score instead of re-prompting (SPEC §7). RLS on `ratings`
+      // restricts this to the caller's own rows; anon users get an empty map.
+      const myScores = new Map<string, number>();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const postIds = data.map((row) => row.id);
+        const { data: myRatings } = await supabase
+          .from("ratings")
+          .select("post_id, score")
+          .eq("user_id", user.id)
+          .in("post_id", postIds);
+        for (const r of myRatings ?? []) myScores.set(r.post_id, r.score);
+      }
       posts = data.map((row): Post => {
         // PostgREST may return the embedded profile as an object or a 1-element
         // array depending on relationship inference — normalize both.
@@ -44,6 +61,7 @@ export default async function Home() {
           created_at: row.created_at,
           author: profile?.username ?? null,
           author_avatar: profile?.avatar_url ?? null,
+          my_score: myScores.get(row.id) ?? null,
         };
       });
     }

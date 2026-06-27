@@ -78,7 +78,9 @@ export default function PostCard({
   eager: boolean;
 }) {
   const router = useRouter();
-  const [picked, setPicked] = useState<number | null>(null);
+  // Seed `picked` from the viewer's already-stored vote so returning users see
+  // the crowd-reveal (with their real score) instead of the pre-vote row (SPEC §7).
+  const [picked, setPicked] = useState<number | null>(post.my_score ?? null);
   const [crowd, setCrowd] = useState({ avg: post.rating_avg, count: post.rating_count });
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -88,6 +90,10 @@ export default function PostCard({
 
   const hue = hueFromId(post.id);
   const author = post.author ?? "wreck_anon";
+  // Mock posts (from MOCK_POSTS) carry placeholder ids, not real DB UUIDs. They
+  // appear in demo mode AND as the empty-table fallback while live=true, so the
+  // id — not `live` — is the reliable signal for whether submit_rating can run.
+  const isMock = post.id.startsWith("mock-");
 
   // ----- Rating (logic preserved exactly from the original card) -----
   async function rate(score: number) {
@@ -95,15 +101,17 @@ export default function PostCard({
 
     // Rating writes require auth (the submit_rating RPC needs auth.uid()). In live
     // mode, send logged-out users to log in instead of faking a crowd reveal.
-    if (live && !isLoggedIn) {
+    if (live && !isMock && !isLoggedIn) {
       router.push("/login?next=/");
       return;
     }
 
     setBusy(true);
     setPicked(score);
-    // Optimistic local reveal against the known average (demo mode stays local-only).
-    if (live) {
+    // Optimistic local reveal against the known average. Skip the network call
+    // for mock ids (no real row → submit_rating would 404 on a bogus UUID) and
+    // in demo mode; both stay local-only.
+    if (live && !isMock) {
       try {
         const res: RatingResult = await submitRatingAction(post.id, score);
         setCrowd({ avg: res.crowd_avg, count: res.count });

@@ -10,6 +10,10 @@ export type Post = {
   // mode and rows without a joined profile render with fallbacks.
   author?: string | null;
   author_avatar?: string | null;
+  // The viewer's own stored 0-10 vote on this post, or null if they haven't
+  // rated it (or aren't logged in). When present, the card renders the
+  // crowd-reveal state immediately instead of the pre-vote rating row (SPEC §7).
+  my_score?: number | null;
 };
 
 export type RatingResult = {
