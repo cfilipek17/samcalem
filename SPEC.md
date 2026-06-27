@@ -67,7 +67,7 @@ Research finding: **Higgsfield does have a public API (~1¢ "Soul" tier), but it
 | **Google "Nano Banana" (Gemini 2.5 Flash Image)** | ~$0.039 | Simple REST | Best at *deliberately funny, prompt-faithful* cartoons. Use as a "premium/funnier" tier. |
 | **Higgsfield Soul** | ~$0.009 | Async jobs + credits | Distinctive aesthetic; keep on shortlist, not the default. |
 
-**Decision (confirmed 2026-06-26):** Default to **Together FLUX.1-schnell** for cost + simplicity; abstract it behind a `generateImage(prompt) -> imageUrl` function so we can A/B **Nano Banana** for comedy quality on a "make it funnier" button. Comical look comes from prompt engineering: *"flat cartoon illustration, bold outlines, exaggerated comical expression, vibrant colors, satirical startup poster."*
+**Decision (updated 2026-06-26):** Start with **Nano Banana (Google Gemini 2.5 Flash Image)** as the default — at MVP volume the cost difference (~4¢ vs ~0.3¢) is a few dollars, and for a comedy app the image quality *is* the product, so optimize funny over cheap. Abstracted behind `generateImage(prompt) -> imageUrl` with `IMAGE_PROVIDER=together` as a one-line switch to the cheaper FLUX-schnell fallback. The cheap validation check (§8.1) also runs on Gemini, so **one Google AI Studio key powers both** image gen and validation. Comical look comes from prompt engineering: *"flat cartoon illustration, bold outlines, exaggerated comical expression, vibrant colors, satirical startup poster."*
 
 > Open item: keep "upload your own image" as a 1-day fallback if any image API stalls launch.
 
