@@ -1,10 +1,13 @@
 // Builds the image prompt from a category's style + the user's pasted idea.
-// Keeping this in one place so adding categories later stays trivial (SPEC §2b).
+// Design intent (Calem, 2026-06-26): the IDEA carries the comedy — the image
+// should render the absurd premise STRAIGHT, like a real startup's hero shot:
+// polished, eye-catching, believable, with only a subtle wry twist. NOT
+// slapstick / cartoonish / "trying to be funny". Deadpan > goofy.
 
 const DEFAULT_STYLE =
-  "flat cartoon illustration, bold black outlines, exaggerated comical expressions, vibrant colors, satirical poster, funny";
+  "high-quality, eye-catching advertising/product visual; clean modern composition, rich lighting, vibrant but tasteful color; rendered straight and believable like a real startup's hero image; only a subtle, dry comedic undertone; scroll-stopping and polished, NOT cartoonish, slapstick, or exaggerated";
 
 export function buildImagePrompt(sourceText: string, imageStyle = DEFAULT_STYLE): string {
   const idea = sourceText.trim().slice(0, 600);
-  return `${imageStyle}. A comical poster visualizing this absurd startup idea: "${idea}". No text in the image.`;
+  return `${imageStyle}. Depict this startup idea as if it were a real product or brand, played completely straight so the absurdity speaks for itself: "${idea}". No text, no words, no logos in the image.`;
 }
