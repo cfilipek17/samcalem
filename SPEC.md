@@ -34,7 +34,8 @@ Every comparable AI-content feed **spiked then cratered**:
 - **Rating:** 0–10 per post, once per user; after voting you see the crowd average + your guess-vs-crowd delta.
 - **Comments** per post.
 - **Leaderboard:** top-rated + "craziest" (highest rating variance with enough votes).
-- **Moderation:** NSFW filter at generation time + user-report queue.
+- **Pre-post validation:** a fast, cheap text check *before* image generation confirms the pasted text is (a) actually a business/startup idea and (b) PG. Junk or unsafe input never reaches the more expensive image step (§8.1).
+- **Moderation:** pre-gen text gate + NSFW filter on the output image + user-report queue.
 - **Cost control:** cap regenerates per post (3) and posts/day per user (5).
 - **Name:** TBD — shortlist in §9.
 
@@ -84,11 +85,24 @@ RLS: posts selectable by all when `status='ready'`; all aggregate writes go thro
 
 - **Rating + crowd average:** single atomic RPC `submit_rating(post_id, score)` — inserts the vote (`on conflict do nothing` = idempotent), updates running `rating_sum/count/avg` in O(1), returns `{crowd_avg, count, your_score, delta}`. Never scans all rows.
 - **Feed pagination:** cursor/keyset (no OFFSET), default newest, `sort=top` ranked. Each page returns viewer's `my_score` in one batched query (no N+1).
-- **Create-post:** insert `pending` row (idempotency anchor) → build prompt → `generateImage()` → NSFW check → upload to Storage → mark `ready`. Failure leaves a recoverable row; client retry never double-charges.
+- **Create-post:** insert `pending` row (idempotency anchor) → **validate pasted text (PG + is-it-a-business-idea gate, §8.1)** → on fail, return redo options and stop *before any image cost* → build prompt → `generateImage()` → NSFW check on the image → upload to Storage → mark `ready`. Failure leaves a recoverable row; client retry never double-charges.
 
 ## 8. Moderation & rate limits
 
-- **NSFW:** use provider safety flag, else a cheap classifier (e.g. `falconsai/nsfw_image_detection`); above threshold → don't store, ask user to retry.
+### 8.1 Pre-generation gate (text) — runs before any image is made
+One cheap LLM classifier call on the pasted text returns structured JSON:
+`{ is_business_idea: bool, is_pg: bool, reason: string, fix_suggestions: string[] }`.
+
+- **Pass** (business idea AND PG) → proceed to image generation.
+- **Fail** → skip image gen entirely; show a quick redo screen with ~3 one-tap options:
+  - **Edit text** (user fixes/repastes — $0 AI cost, the default free path)
+  - **Try again** (re-run their own AI with the prompt again)
+  - **Auto-fix** (optional) — same cheap model rewrites it into a PG business idea (~$0.0003)
+- **Provider:** a small/cheap model — Groq or Together Llama, or Claude Haiku — for the "is it a business idea" judgment; optionally pair with OpenAI's **free moderation endpoint** for the safety half. ~$0.0001–0.0005 per check.
+- **Why it pays for itself:** the text check is ~10–50× cheaper than an image, so gating here *reduces* total spend by killing wasted image gens on junk/unsafe input.
+
+### 8.2 Image + reports
+- **NSFW (image):** use provider safety flag, else a cheap classifier (e.g. `falconsai/nsfw_image_detection`); above threshold → don't store, ask user to retry. (Defense-in-depth: text can pass but an image still come out weird.)
 - **Reports:** insert + increment counter; `report_count >= 5` auto-hides pending review; simple internal mod page over `reports where status='open'`.
 - **Limits (server-side, transactional, before any paid API call):** 5 posts/day, 3 regens/post, 1 rating/post, 1 report/target, ~30 comments/hr, + edge IP rate-limit on `/api/posts*`.
 
@@ -111,6 +125,8 @@ Image cost scales with **posts, not views** (scrolling serves already-made image
 - Traction (10k users): **~$25–80/mo** + infra ≈ $100–150/mo all-in
 - Semi-viral (100k users): **~$250–800/mo**
 
+The pre-generation text check (§8.1) adds ~$0.0001–0.0005 per attempt — far cheaper than an image, and it *reduces* net cost by blocking junk before the image step.
+
 Infra (Supabase + Vercel + Cloudflare/Supabase storage) is ~$0–25/mo until real volume. Self-hosting an open-source model to "save money" would *cost more* until massive scale — don't.
 
 ---
@@ -132,4 +148,5 @@ Infra (Supabase + Vercel + Cloudflare/Supabase storage) is ~$0–25/mo until rea
 - [x] **Retention scope** — deferred to post-MVP; crowd-reveal stays in rating (§3)
 - [ ] Register pitchwreck.com + social handles
 - [ ] Get a Together AI API key
+- [ ] Pick the cheap classifier provider for the pre-gen gate (Groq / Together / Haiku) (§8.1)
 - [ ] Verify Together/fal current pricing before coding
