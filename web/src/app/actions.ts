@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasSupabase } from "@/lib/supabase/config";
 import { validateIdea } from "@/lib/validate";
 import { generateImage } from "@/lib/image";
+import { uploadPostImage } from "@/lib/storage";
 import { buildImagePrompt } from "@/lib/prompts";
 import type { RatingResult, ValidationResult } from "@/lib/types";
 
@@ -59,7 +60,8 @@ export async function createPostAction(
   const img = await generateImage(prompt);
   if (!img.ok) return { status: "error", message: img.error };
 
-  // 4. Insert the finished post.
+  // 4. Insert the finished post. Seed with the inline data-URL (or provider URL)
+  //    so a row always exists and the feed renders even if Storage is offline.
   const { data: post, error: insErr } = await supabase
     .rpc("create_post", {
       p_category_id: categoryId,
@@ -71,9 +73,29 @@ export async function createPostAction(
     .select()
     .single();
   if (insErr) return { status: "error", message: insErr.message };
+  const postId = (post as { id: string }).id;
+
+  // 5. Move the image into Supabase Storage and swap the heavy data-URL for the
+  //    permanent public URL. Best-effort: if Storage isn't available (no bucket /
+  //    no service-role key) or the provider returned only a hosted URL, we leave
+  //    the data-URL fallback in place and posting still succeeds.
+  if (img.bytes) {
+    const uploaded = await uploadPostImage(postId, img.bytes, img.mime);
+    if (uploaded) {
+      const { error: setErr } = await supabase.rpc("set_post_image", {
+        p_post_id: postId,
+        p_image_url: uploaded.publicUrl,
+        p_image_path: uploaded.path,
+      });
+      if (setErr) {
+        // Non-fatal: the post already has the working data-URL.
+        console.error("[create-post] set_post_image failed:", setErr.message);
+      }
+    }
+  }
 
   revalidatePath("/");
-  return { status: "ok", postId: (post as { id: string }).id };
+  return { status: "ok", postId };
 }
 
 // Dev-only image lab: generate one image from an idea to judge model quality.
