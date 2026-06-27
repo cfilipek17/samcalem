@@ -21,11 +21,15 @@ This file is written so an autonomous build session can pick it up and execute t
 
 ## Human-only prerequisites (an agent CANNOT do these)
 
-- [ ] **Enable Google billing** on the API key's project — image gen returns HTTP 429 (`limit: 0`) until done.
-- [ ] Put **`NEXT_PUBLIC_SUPABASE_URL`** + **`NEXT_PUBLIC_SUPABASE_ANON_KEY`** in `web/.env.local`.
+- [x] **Enable Google billing** — DONE 2026-06-26; Nano Banana (`gemini-3.1-flash-image`) confirmed generating.
+- [x] **`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`** — DONE; in `web/.env.local`, connection verified
+      (reads the seeded `startup-ideas` category). `GOOGLE_API_KEY` also present and working. App runs in live mode.
 - [ ] (Only if you want "Sign in with Google") configure Google OAuth in the Supabase dashboard +
       Google Cloud credentials. **Magic-link email login needs none of this** — prefer it for MVP.
 - [ ] Vercel account for deploy; register `pitchwreck.com` + handles.
+
+> NOTE for the build session: `web/.env.local` on this machine already has working Supabase + Google keys,
+> so you CAN test the live feed, image generation, and (once built) auth end-to-end. Don't assume keys are missing.
 
 ## Already built ✅
 
