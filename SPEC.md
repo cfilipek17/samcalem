@@ -1,4 +1,4 @@
-# SPEC — "AI Slop" Startup-Idea Rating Feed
+# SPEC — Pitchwreck (AI-Slop Startup-Idea Rating Feed)
 
 **Status:** Draft v1 (2026-06-26) · Owners: Calem & Sam
 **One-liner:** A vertical-scroll feed where people post AI-generated funny startup ideas as comical images, and everyone rates them 0–10 — then sees how their guess compared to the crowd.
@@ -38,11 +38,14 @@ Every comparable AI-content feed **spiked then cratered**:
 - **Cost control:** cap regenerates per post (3) and posts/day per user (5).
 - **Name:** TBD — shortlist in §9.
 
-### Retention mechanics to include in MVP (the new requirement)
-- **Daily cadence:** a "today's top slop" / daily challenge so there's a reason to come back each day.
-- **Personal stats:** your rating accuracy vs the crowd ("you're a harsh judge"), streaks.
-- **Leaderboard** visible and live from day one.
+### Retention mechanics — DEFERRED to post-MVP (decision 2026-06-26)
+MVP ships **feed + posting + rating first.** Important: the single most valuable retention element — the **vote → crowd-reveal** loop — is already part of rating, so it stays *in* the MVP regardless. What's deferred:
+- Daily challenge / "today's top slop" cadence
+- Personal accuracy stats + streaks
+- Leaderboard
 - *(Later: founders-club referral gating, remix/fork-an-idea, paid tiers.)*
+
+⚠️ Tradeoff acknowledged: deferring these accepts the Sora-style novelty-cliff risk in §2. Revisit fast if early retention sags.
 
 ---
 
@@ -57,7 +60,7 @@ Research finding: **Higgsfield does have a public API (~1¢ "Soul" tier), but it
 | **Google "Nano Banana" (Gemini 2.5 Flash Image)** | ~$0.039 | Simple REST | Best at *deliberately funny, prompt-faithful* cartoons. Use as a "premium/funnier" tier. |
 | **Higgsfield Soul** | ~$0.009 | Async jobs + credits | Distinctive aesthetic; keep on shortlist, not the default. |
 
-**Recommendation:** Default to **Together FLUX.1-schnell** for cost + simplicity; abstract it behind a `generateImage(prompt) -> imageUrl` function so we can A/B **Nano Banana** for comedy quality on a "make it funnier" button. Comical look comes from prompt engineering: *"flat cartoon illustration, bold outlines, exaggerated comical expression, vibrant colors, satirical startup poster."*
+**Decision (confirmed 2026-06-26):** Default to **Together FLUX.1-schnell** for cost + simplicity; abstract it behind a `generateImage(prompt) -> imageUrl` function so we can A/B **Nano Banana** for comedy quality on a "make it funnier" button. Comical look comes from prompt engineering: *"flat cartoon illustration, bold outlines, exaggerated comical expression, vibrant colors, satirical startup poster."*
 
 > Open item: keep "upload your own image" as a 1-day fallback if any image API stalls launch.
 
@@ -93,12 +96,11 @@ RLS: posts selectable by all when `status='ready'`; all aggregate writes go thro
 
 ## 9. Name shortlist
 
-Top 3 from the council:
-1. **SlopShop** — *Where the bad ideas are the good ideas.* (on-brand, meme-y; .com likely partly taken)
-2. **Unicornucopia** — *A horn of plenty, full of nonsense.* (clever startup in-joke, ownable)
-3. **Pitchwreck** — *Post your worst. Watch it burn.* (edgy roast-arena, likely available)
+**CHOSEN: Pitchwreck** — *Post your worst. Watch it burn.* (edgy roast-arena, fits the 0–10 rating + future leaderboard; domain likely available — grab it).
 
-Also: **Slop Club** for the future founders/referral tier. Decision pending.
+Runners-up kept for reference: **SlopShop**, **Unicornucopia**. **Slop Club** reserved for the future founders/referral tier.
+
+> TODO: register pitchwreck.com (+ handles) before launch.
 
 ---
 
@@ -125,7 +127,9 @@ Infra (Supabase + Vercel + Cloudflare/Supabase storage) is ~$0–25/mo until rea
 
 ## 12. Open decisions
 
-- [ ] **Name** (§9)
-- [ ] **Image provider** — confirm Together FLUX-schnell default + Nano Banana premium (§4)
-- [ ] Confirm retention mechanics in MVP scope (§2/§3) — recommended yes
-- [ ] Verify Together/fal current pricing + Higgsfield API details before coding
+- [x] **Name** — Pitchwreck (§9)
+- [x] **Image provider** — Together FLUX-schnell default + Nano Banana premium (§4)
+- [x] **Retention scope** — deferred to post-MVP; crowd-reveal stays in rating (§3)
+- [ ] Register pitchwreck.com + social handles
+- [ ] Get a Together AI API key
+- [ ] Verify Together/fal current pricing before coding
