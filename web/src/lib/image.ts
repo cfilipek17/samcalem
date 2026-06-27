@@ -17,7 +17,7 @@ export async function generateImage(prompt: string): Promise<GenerateImageResult
 
 async function generateWithGemini(prompt: string): Promise<GenerateImageResult> {
   const key = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image";
+  const model = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
   if (!key) return { ok: false, error: "GOOGLE_API_KEY not set — image generation is disabled." };
 
   try {
