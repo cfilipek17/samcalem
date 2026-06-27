@@ -64,6 +64,20 @@ export async function createPostAction(
   return { status: "ok", postId: (post as { id: string }).id };
 }
 
+// Dev-only image lab: generate one image from an idea to judge model quality.
+// Refuses in production so it can't be abused to rack up image costs.
+export async function generateTestImageAction(
+  idea: string
+): Promise<{ ok: true; url: string; prompt: string } | { ok: false; error: string }> {
+  if (process.env.NODE_ENV === "production") {
+    return { ok: false, error: "Image lab is disabled in production." };
+  }
+  const prompt = buildImagePrompt(idea);
+  const img = await generateImage(prompt);
+  if (!img.ok) return { ok: false, error: img.error };
+  return { ok: true, url: img.url, prompt };
+}
+
 export async function submitRatingAction(
   postId: string,
   score: number
