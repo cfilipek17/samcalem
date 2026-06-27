@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Post, RatingResult } from "@/lib/types";
 import { submitRatingAction } from "@/app/actions";
 
@@ -19,7 +20,16 @@ function hueFromId(id: string): number {
   return h;
 }
 
-export default function PostCard({ post, live }: { post: Post; live: boolean }) {
+export default function PostCard({
+  post,
+  live,
+  isLoggedIn,
+}: {
+  post: Post;
+  live: boolean;
+  isLoggedIn: boolean;
+}) {
+  const router = useRouter();
   const [picked, setPicked] = useState<number | null>(null);
   const [crowd, setCrowd] = useState({ avg: post.rating_avg, count: post.rating_count });
   const [busy, setBusy] = useState(false);
@@ -27,15 +37,23 @@ export default function PostCard({ post, live }: { post: Post; live: boolean }) 
 
   async function rate(score: number) {
     if (picked !== null || busy) return;
+
+    // Rating writes require auth (the submit_rating RPC needs auth.uid()). In live
+    // mode, send logged-out users to log in instead of faking a crowd reveal.
+    if (live && !isLoggedIn) {
+      router.push("/login?next=/");
+      return;
+    }
+
     setBusy(true);
     setPicked(score);
-    // Optimistic local reveal against the known average.
+    // Optimistic local reveal against the known average (demo mode stays local-only).
     if (live) {
       try {
         const res: RatingResult = await submitRatingAction(post.id, score);
         setCrowd({ avg: res.crowd_avg, count: res.count });
       } catch {
-        // Not logged in / outage — keep the local reveal. Auth UI lands next milestone.
+        // Outage / RLS rejection — keep the local reveal rather than hard-failing.
       }
     }
     setBusy(false);

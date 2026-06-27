@@ -1,6 +1,7 @@
 import Feed from "@/components/Feed";
 import { hasSupabase } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/supabase/auth";
 import { MOCK_POSTS } from "@/lib/mockPosts";
 import type { Post } from "@/lib/types";
 
@@ -20,5 +21,7 @@ export default async function Home() {
     if (data && data.length > 0) posts = data as Post[];
   }
 
-  return <Feed posts={posts} live={live} />;
+  const user = await getSessionUser();
+
+  return <Feed posts={posts} live={live} user={user} />;
 }

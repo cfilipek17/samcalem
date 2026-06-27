@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabase } from "@/lib/supabase/config";
 import { validateIdea } from "@/lib/validate";
@@ -9,6 +10,17 @@ import { buildImagePrompt } from "@/lib/prompts";
 import type { RatingResult, ValidationResult } from "@/lib/types";
 
 const MAX_POSTS_PER_DAY = 5;
+
+// Signs the current user out and returns them to the feed. Used by the header
+// sign-out button (a form action). The proxy-refreshed cookies are cleared here.
+export async function signOutAction() {
+  if (hasSupabase()) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  }
+  revalidatePath("/");
+  redirect("/");
+}
 
 export type CreatePostResult =
   | { status: "ok"; postId: string }

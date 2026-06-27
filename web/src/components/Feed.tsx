@@ -1,8 +1,18 @@
 import Link from "next/link";
 import type { Post } from "@/lib/types";
+import type { SessionUser } from "@/lib/supabase/auth";
+import { signOutAction } from "@/app/actions";
 import PostCard from "./PostCard";
 
-export default function Feed({ posts, live }: { posts: Post[]; live: boolean }) {
+export default function Feed({
+  posts,
+  live,
+  user,
+}: {
+  posts: Post[];
+  live: boolean;
+  user: SessionUser | null;
+}) {
   return (
     <div className="relative">
       {/* Top bar */}
@@ -10,12 +20,35 @@ export default function Feed({ posts, live }: { posts: Post[]; live: boolean }) 
         <span className="text-lg font-black tracking-tight">
           Pitch<span className="text-amber-400">wreck</span>
         </span>
-        <Link
-          href="/create"
-          className="pointer-events-auto rounded-full bg-amber-400 px-4 py-1.5 text-sm font-bold text-black transition hover:bg-amber-300"
-        >
-          Post
-        </Link>
+
+        <div className="pointer-events-auto flex items-center gap-2">
+          {user ? (
+            <>
+              <span className="hidden text-xs text-white/60 sm:inline">@{user.username}</span>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/20"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/20"
+            >
+              Log in
+            </Link>
+          )}
+          <Link
+            href="/create"
+            className="rounded-full bg-amber-400 px-4 py-1.5 text-sm font-bold text-black transition hover:bg-amber-300"
+          >
+            Post
+          </Link>
+        </div>
       </header>
 
       {!live && (
@@ -28,7 +61,7 @@ export default function Feed({ posts, live }: { posts: Post[]; live: boolean }) 
 
       <main className="feed">
         {posts.map((p) => (
-          <PostCard key={p.id} post={p} live={live} />
+          <PostCard key={p.id} post={p} live={live} isLoggedIn={Boolean(user)} />
         ))}
       </main>
     </div>
