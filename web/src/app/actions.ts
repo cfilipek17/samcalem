@@ -1,0 +1,78 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { hasSupabase } from "@/lib/supabase/config";
+import { validateIdea } from "@/lib/validate";
+import { generateImage } from "@/lib/image";
+import { buildImagePrompt } from "@/lib/prompts";
+import type { RatingResult, ValidationResult } from "@/lib/types";
+
+const MAX_POSTS_PER_DAY = 5;
+
+export type CreatePostResult =
+  | { status: "ok"; postId: string }
+  | { status: "needs_auth" }
+  | { status: "rejected"; validation: ValidationResult }
+  | { status: "limit" }
+  | { status: "error"; message: string };
+
+// Posting flow (SPEC §7): validate text -> claim daily slot -> generate image -> insert.
+export async function createPostAction(
+  sourceText: string,
+  caption: string,
+  categoryId = "startup-ideas"
+): Promise<CreatePostResult> {
+  if (!hasSupabase()) return { status: "error", message: "Supabase not configured yet." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { status: "needs_auth" };
+
+  // 1. Cheap text gate BEFORE any image cost.
+  const validation = await validateIdea(sourceText);
+  if (!validation.is_business_idea || !validation.is_pg) {
+    return { status: "rejected", validation };
+  }
+
+  // 2. Atomically claim a daily posting slot.
+  const { data: allowed, error: slotErr } = await supabase.rpc("claim_post_slot", {
+    p_max: MAX_POSTS_PER_DAY,
+  });
+  if (slotErr) return { status: "error", message: slotErr.message };
+  if (!allowed) return { status: "limit" };
+
+  // 3. Generate the comical image.
+  const prompt = buildImagePrompt(sourceText);
+  const img = await generateImage(prompt);
+  if (!img.ok) return { status: "error", message: img.error };
+
+  // 4. Insert the finished post.
+  const { data: post, error: insErr } = await supabase
+    .rpc("create_post", {
+      p_category_id: categoryId,
+      p_caption: caption.slice(0, 280),
+      p_source_text: sourceText,
+      p_image_prompt: prompt,
+      p_image_url: img.url,
+    })
+    .select()
+    .single();
+  if (insErr) return { status: "error", message: insErr.message };
+
+  revalidatePath("/");
+  return { status: "ok", postId: (post as { id: string }).id };
+}
+
+export async function submitRatingAction(
+  postId: string,
+  score: number
+): Promise<RatingResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("submit_rating", {
+    p_post_id: postId,
+    p_score: score,
+  });
+  if (error) throw new Error(error.message);
+  return data as RatingResult;
+}

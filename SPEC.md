@@ -25,6 +25,12 @@ Every comparable AI-content feed **spiked then cratered**:
 
 ---
 
+## 2b. Product vision beyond startup ideas (architect for it now)
+
+Pitchwreck is **not** "the startup-idea app" — it's "the feed where you post funny AI creations and the crowd rates them 0–10." Startup ideas are just **category #1.** The anti-Sora edge isn't "we do slop," it's "we turn slop into a *game* across formats people want to scroll." Future categories: fake product names, worst AI movie pitches, cursed inventions, AI conspiracy theories, etc.
+
+**Architectural consequence (do this in the MVP schema even though we ship one category):** posts belong to a **category** with its own **prompt template** and validation rule. Adding a new format later = inserting a `categories` row, not a rebuild. MVP seeds exactly one category ("Startup Ideas") so the UI/flow is identical to the original plan.
+
 ## 3. MVP scope (locked decisions)
 
 - **Platform:** Web app / PWA (installable, no app store).
