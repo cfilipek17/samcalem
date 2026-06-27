@@ -5,9 +5,9 @@
 // slapstick / cartoonish / "trying to be funny". Deadpan > goofy.
 
 const DEFAULT_STYLE =
-  "high-quality, eye-catching advertising/product visual; clean modern composition, rich lighting, vibrant but tasteful color; rendered straight and believable like a real startup's hero image; only a subtle, dry comedic undertone; scroll-stopping and polished, NOT cartoonish, slapstick, or exaggerated";
+  "Premium advertising/editorial product photograph of the startup idea rendered as a REAL, named brand. CRITICAL: anchor the premise in ONE clearly visible hero object — a physical product, package, device screen, storefront, or signage — that by itself communicates the idea; place it centered and in sharp focus so a viewer scrolling fast instantly 'gets it' without reading. Avoid generic lifestyle/stock scenes (people just sitting, talking, or gesturing) where the concept is implied but not shown. Studio-grade or natural light, shallow depth of field, clean modern composition, rich tasteful color, photoreal materials. Play the absurdity completely straight — deadpan, dignified, like a Kickstarter hero shot or a glossy magazine ad — never slapstick, cartoonish, exaggerated, or winking. If any text or label is needed to land the joke, limit it to ONE short punchy line or product name (no paragraphs), set in elegant minimalist type. The humor comes entirely from the straight-faced presentation of an absurd real-looking product.";
 
 export function buildImagePrompt(sourceText: string, imageStyle = DEFAULT_STYLE): string {
   const idea = sourceText.trim().slice(0, 600);
-  return `${imageStyle}. Depict this startup idea as if it were a real product or brand, played completely straight so the absurdity speaks for itself: "${idea}". No text, no words, no logos in the image.`;
+  return `${imageStyle} The startup idea to depict: "${idea}".`;
 }
