@@ -6,6 +6,10 @@ export type Post = {
   rating_avg: number;
   rating_count: number;
   created_at: string;
+  // Author handle + avatar for the action rail / meta block. Optional: demo
+  // mode and rows without a joined profile render with fallbacks.
+  author?: string | null;
+  author_avatar?: string | null;
 };
 
 export type RatingResult = {
